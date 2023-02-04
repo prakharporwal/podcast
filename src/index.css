@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-appearance: none;
+}
+
+.sidebar-button {
+  @apply text-mygrey-900 hover:text-white capitalize overflow-hidden text-ellipsis whitespace-nowrap;
+}
+
+.sidebar-playlist-button {
+  @apply text-mygrey-900 hover:text-white capitalize overflow-hidden text-ellipsis whitespace-nowrap py-1 w-full text-left block;
+}
+
+.sidebar-button-active {
+  @apply text-white capitalize overflow-hidden text-ellipsis;
+}
+
+.song-player-button {
+  @apply text-gray-200 hover:text-white focus-visible:border-none;
+}
+
+@layer components {
+  .my-table-spacing {
+    border-spacing: theme("spacing.3");
+  }
+}

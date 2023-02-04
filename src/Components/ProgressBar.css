@@ -1,0 +1,68 @@
+/* Background of progress bar*/
+.progress-bar input[type="range"]::-webkit-slider-runnable-track {
+  background: white;
+  height: 0.2rem;
+  border-radius: 8px;
+}
+
+.progress-bar input[type="range"]::-moz-range-track {
+  background: white;
+  height: 0.2rem;
+  border-radius: 8px;
+}
+
+/*Target the progress bar thumb*/
+.progress-bar input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  height: 0rem; /*Disappear*/
+  width: 0rem;
+}
+
+.progress-bar input[type="range"]::-moz-range-thumb {
+  border: none; /*Removes extra border that FF applies*/
+  border-radius: 0; /*Removes default border-radius that FF applies*/
+  background-color: white;
+  height: 0rem; /*Disappear*/
+  width: 0rem;
+}
+
+/* Targeting the background on Focus*/
+.progress-bar input[type="range"]:hover::-webkit-slider-runnable-track {
+  background: #1ed760;
+  height: 0.2rem;
+  border-radius: 8px;
+}
+
+.progress-bar input[type="range"]:hover::-moz-range-track {
+  background: #1ed760;
+  height: 0.2rem;
+  border-radius: 8px;
+}
+
+/*Target the progress bar thumb*/
+.progress-bar input[type="range"]:hover::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  appearance: none;
+  margin-top: -2px; /* Centers thumb on the track */
+  background-color: white;
+  height: 0.5rem;
+  width: 0.5rem;
+  cursor: ew-resize;
+  border-radius: 50%;
+}
+
+.progress-bar input[type="range"]:hover::-moz-range-thumb {
+  border: none; /*Removes extra border that FF applies*/
+  border-radius: 0; /*Removes default border-radius that FF applies*/
+  background-color: white;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 50%;
+}
+
+/***** Focus Styles *****/
+/* Removes default focus */
+.progress-bar input[type="range"]:focus {
+  outline: none;
+}
+/***************************************************progress Bar CSS ends********************************************************/
