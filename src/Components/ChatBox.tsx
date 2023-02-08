@@ -32,6 +32,7 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
     },
     {
       message:
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
         "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
       sender: { email: "lolo" },
     },
@@ -81,12 +82,12 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
   }
 
   return (
-    <Box pos="fixed" left={0} display={"none"}>
+    <Box>
       <Box
         h={"99vh"}
-        w={"20rem"}
         borderRadius={8}
         border="0.5px solid gray"
+        bgColor={"greenyellow"}
         margin={1}
         pos="relative"
       >
@@ -94,7 +95,7 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
           Joe Rogan Naval #1906
         </Heading>
 
-        <Box marginX={1} bgColor={"green.200"}>
+        <Box marginX={1}>
           {chats.map((chat, idx) => (
             <ChatMessage
               key={idx}
@@ -108,12 +109,13 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
           bottom={0}
           display={"flex"}
           gap={1}
-          padding={1}
+          padding={"1px"}
           w="100%"
         >
           <Input
             value={currentMessage}
             fontSize={"sm"}
+            bgColor={"white"}
             placeholder="Hey People! Just Enjoying the podcast"
             onChange={(e) => {
               setCurrentMessage(e.currentTarget.value);
