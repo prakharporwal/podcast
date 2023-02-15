@@ -7,9 +7,9 @@ import {
   Input,
   Text,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdSend } from "react-icons/md";
-import { ws } from "../websocket/Websocket";
+import { connectToWS } from "../websocket/Websocket";
 
 type User = {
   email: string;
@@ -23,9 +23,72 @@ type chatMessage = {
 
 var currentUser: string = "prakhar";
 
-export const ChatBox: React.FunctionComponent = (props: any) => {
+type chatBoxProps = {
+  roomId: string;
+};
+
+export const ChatBox: React.FunctionComponent<chatBoxProps> = (props) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+
   const [chats, setChats] = useState<chatMessage[]>([
+    {
+      message: "hey",
+      sender: { email: "prakhar", isActive: true },
+    },
+    {
+      message:
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+      sender: { email: "lolo" },
+    },
+    {
+      message: "abey",
+      sender: { email: "Anony" },
+    },
+    {
+      message: "hey",
+      sender: { email: "prakhar", isActive: true },
+    },
+    {
+      message:
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+      sender: { email: "lolo" },
+    },
+    {
+      message: "abey",
+      sender: { email: "Anony" },
+    },
+    {
+      message: "hey",
+      sender: { email: "prakhar", isActive: true },
+    },
+    {
+      message:
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+      sender: { email: "lolo" },
+    },
+    {
+      message: "abey",
+      sender: { email: "Anony" },
+    },
+    {
+      message: "hey",
+      sender: { email: "prakhar", isActive: true },
+    },
+    {
+      message:
+        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+      sender: { email: "lolo" },
+    },
+    {
+      message: "abey",
+      sender: { email: "Anony" },
+    },
     {
       message: "hey",
       sender: { email: "prakhar", isActive: true },
@@ -42,7 +105,7 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
     },
   ]);
 
-  let websocket: WebSocket = ws;
+  let websocket: WebSocket = connectToWS(props.roomId);
 
   useEffect(() => {
     websocket.addEventListener("message", (e) => {
@@ -56,6 +119,9 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
         console.log("message recieved parsing went wrong");
       }
     });
+
+    // 👇️ scroll to bottom every time messages change
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [websocket, chats]);
 
   function sendMessage() {
@@ -87,15 +153,31 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
         h={"99vh"}
         borderRadius={8}
         border="0.5px solid gray"
-        bgColor={"greenyellow"}
+        // bgColor={"whitesmoke"}
+        bgImage={"linear-gradient(to bottom, #FDFCFB, #E2D1C3)"}
         margin={1}
         pos="relative"
       >
-        <Heading as="h4" size={"md"} textAlign="center" noOfLines={1}>
+        <Heading
+          as="h5"
+          size={"md"}
+          textAlign="center"
+          noOfLines={1}
+          textColor={"whitesmoke"}
+          bgColor={"blue.600"}
+          paddingY={"2"}
+          borderRadius={"8px 8px 0px 0px"}
+        >
           Joe Rogan Naval #1906
         </Heading>
 
-        <Box marginX={1}>
+        <Box
+          margin="1"
+          height={"88%"}
+          overflowY={"auto"}
+          style={{ scrollbarWidth: "thin" }}
+          // scrollPadding="0"
+        >
           {chats.map((chat, idx) => (
             <ChatMessage
               key={idx}
@@ -103,6 +185,7 @@ export const ChatBox: React.FunctionComponent = (props: any) => {
               sender={chat.sender}
             />
           ))}
+          <Box ref={bottomRef} display="hidden"></Box>
         </Box>
         <Box
           pos={"absolute"}
@@ -144,6 +227,7 @@ const ChatMessage: React.FunctionComponent<chatMessage> = ({
 }) => {
   return (
     <Box
+      className="chat-message"
       display={"flex"}
       flexDir={"row"}
       gap={1}
@@ -157,7 +241,7 @@ const ChatMessage: React.FunctionComponent<chatMessage> = ({
       </Avatar>
       <Box
         w="70%"
-        bg="lightYellow"
+        bg={"lightyellow"}
         border={"0.5px solid gray"}
         borderRadius={8}
         padding={2}
