@@ -1,5 +1,5 @@
 import { Box, Button, Grid, GridItem, IconButton } from "@chakra-ui/react";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MdCallEnd,
   MdMic,
@@ -9,166 +9,197 @@ import {
   MdVideocam,
   MdVideocamOff,
 } from "react-icons/md";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useParams } from "react-router-dom";
 import { ChatBox } from "../Components/ChatBox";
 import Constants from "../Components/Constants";
-import { newPeerConnection } from "../peerConnection";
+import { createConnectionOffer, newPeerConnection } from "../peerConnection";
+import { connectToWS } from "../websocket/Websocket";
 
-type MyState = {
-  micState: boolean;
-  videoState: boolean;
-  stream: MediaStream | null;
-  screenStream: MediaStream | null;
-  screenShare: boolean;
-  localOffer: any;
+type podcastMeetProps = {};
+
+type podcastParam = {
+  roomId: string;
 };
 
-class PodcastMeetPage extends React.Component<any, MyState> {
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      micState: false,
-      videoState: false,
-      stream: new MediaStream(),
-      screenShare: false,
-      screenStream: new MediaStream(),
-      localOffer: null,
-    };
-  }
+const PodcastMeetPage: React.FunctionComponent<podcastMeetProps> =
+  React.forwardRef((props, ref) => {
+    const [micState, setMicState] = useState<boolean>(false);
+    const [videoState, setVideoState] = useState<boolean>(true);
+    const [screenShare, setScreenShare] = useState<boolean>(false);
+    const [stream, setStream] = useState<MediaStream | null>(new MediaStream());
+    const [screenStream, setScreenStream] = useState<MediaStream | null>(
+      new MediaStream()
+    );
+    const [recording, setRecording] = useState<boolean>(false);
+    const [localOffer, setLocalOffer] = useState<string | null>(null);
+    const { roomId } = useParams<podcastParam>();
 
-  componentDidMount() {
-    document.title = "Podcast";
-  }
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  openAudioMic(config: MediaStreamConstraints) {
-    let audio = document.querySelector("audio");
-    navigator.mediaDevices.getUserMedia(config).then((mediaStream) => {
-      audio!.srcObject = mediaStream;
-      this.setState({ stream: mediaStream });
-    });
-    console.log("mic opened");
-  }
+    let websocket: WebSocket = connectToWS(roomId == null ? "waiting" : roomId);
 
-  closeAudioMic(config: any) {
-    this.state.stream!.getAudioTracks().forEach((t) => t.stop());
-    console.log("mic closed");
-    // let audio = document.querySelector("audio");
-    // audio!.srcObject = null;
-  }
+    useEffect(() => {
+      document.title = "Meeting";
+    }, []);
 
-  openCamera(config: MediaStreamConstraints) {
-    let video: HTMLVideoElement | null = document.querySelector("#user-video");
-    navigator.mediaDevices.getUserMedia(config).then((mediaStream) => {
-      video!.srcObject = mediaStream;
-      this.setState({ stream: mediaStream });
-    });
-    console.log("camera opened");
-  }
-
-  closeCamera(config: any) {
-    this.state.stream!.getVideoTracks().forEach((t) => t.stop());
-    console.log("camera closed");
-    // let video = document.querySelector("video");
-    // video!.srcObject = null;
-  }
-
-  async handleScreenShare() {
-    if (this.state.screenShare) {
-      this.state.screenStream!.getTracks().forEach((e) => {
-        e.stop();
-        console.log(e);
+    function openAudioMic(config: MediaStreamConstraints) {
+      let audio = document.querySelector("audio");
+      navigator.mediaDevices.getUserMedia(config).then((mediaStream) => {
+        audio!.srcObject = mediaStream;
+        setStream(mediaStream);
       });
-      this.setState({ screenShare: false, screenStream: null });
-      return;
+      console.log("mic opened");
     }
-    try {
-      let screenMediaStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          height: {
-            ideal: 960,
+
+    function closeAudioMic(config: any) {
+      stream!.getAudioTracks().forEach((t) => t.stop());
+      console.log("mic closed");
+      // let audio = document.querySelector("audio");
+      // audio!.srcObject = null;
+    }
+
+    function openCamera(config: MediaStreamConstraints) {
+      let devices = navigator.mediaDevices.enumerateDevices();
+
+      devices.then((device) => console.log(device));
+
+      navigator.mediaDevices.getUserMedia(config).then((mediaStream) => {
+        videoRef.current!.srcObject = mediaStream;
+        remoteVideoRef.current!.srcObject = mediaStream;
+      });
+    }
+
+    function closeCamera(config: any) {
+      stream!.getVideoTracks().forEach((t) => t.stop());
+      console.log("camera closed");
+      // let video = document.querySelector("video");
+      // video!.srcObject = null;
+    }
+
+    async function handleScreenShare() {
+      if (screenShare) {
+        screenStream!.getTracks().forEach((e) => {
+          e.stop();
+          console.log(e);
+        });
+        setScreenShare(false);
+        setScreenStream(null);
+        return;
+      }
+      try {
+        let screenMediaStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            height: {
+              ideal: 960,
+            },
+            width: {
+              ideal: 1280,
+            },
           },
-          width: {
-            ideal: 1280,
-          },
+          audio: true,
+        });
+
+        let screen: HTMLVideoElement | null =
+          document.querySelector("#screen-share");
+        screen!.srcObject = screenMediaStream;
+        console.log(screenMediaStream);
+        setScreenShare(true);
+        setScreenStream(screenMediaStream);
+      } catch (ex) {
+        console.log("Error occurred", ex);
+      }
+    }
+
+    async function killConnection() {
+      let options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        audio: true,
-      });
-
-      let screen: HTMLVideoElement | null =
-        document.querySelector("#screen-share");
-      screen!.srcObject = screenMediaStream;
-      console.log(screenMediaStream);
-      this.setState({
-        screenShare: true,
-        screenStream: screenMediaStream,
-      });
-    } catch (ex) {
-      console.log("Error occurred", ex);
+      };
+      await fetch(Constants.API + "/remote/description/stop", {
+        ...options,
+      })
+        .then((res) => {
+          if (res.ok) {
+            return res.json();
+          } else {
+            throw res;
+          }
+        })
+        .then((data) => {
+          console.log(data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     }
-  }
 
-  async killConnection() {
-    let options = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-    await fetch(Constants.API + "/remote/description/stop", {
-      ...options,
-    })
-      .then((res) => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          throw res;
+    async function fetchRemoteAnswer(offer: string): Promise<string> {
+      let token: string = "";
+
+      let options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ remote_description_token: offer }),
+      };
+      await fetch(Constants.API + "/remote/description/get", {
+        ...options,
+      })
+        .then((res) => {
+          if (res.ok) {
+            return res.json();
+          } else {
+            throw res;
+          }
+        })
+        .then((data) => {
+          console.log(data);
+          token = data.remote_description_token;
+          setRecording(true);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+
+      return token;
+    }
+
+    function negotiateOffer() {
+      let pc = newPeerConnection();
+      pc.onicecandidate = async (event) => {
+        if (event.candidate === null) {
+          setLocalOffer(btoa(JSON.stringify(pc.localDescription)));
+
+          console.log(localOffer);
+
+          let x = await fetchRemoteAnswer(
+            btoa(JSON.stringify(pc.localDescription))
+          );
+
+          try {
+            pc.setRemoteDescription(JSON.parse(atob(x)));
+          } catch (e) {
+            alert(e);
+          }
         }
-      })
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
+      };
 
-  async fetchRemoteAnswer(offer: string): Promise<string> {
-    let token: string = "";
+    }
 
-    let options = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ remote_description_token: offer }),
-    };
-    await fetch(Constants.API + "/remote/description/sdp", {
-      ...options,
-    })
-      .then((res) => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          throw res;
-        }
-      })
-      .then((data) => {
-        console.log(data);
-        token = data.remote_description_token;
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    let streams: any[] = [
+      { name: "abc", ref: videoRef },
+      { name: "pre", ref: remoteVideoRef },
+    ];
 
-    return token;
-  }
-
-  render() {
     return (
       <Box bgColor={"black"}>
         <Grid templateColumns="20rem auto 2rem" gap={1}>
           <GridItem>
-            <ChatBox roomId={""} />
+            <ChatBox roomId={roomId} ws={websocket} />
           </GridItem>
 
           <GridItem paddingTop={1}>
@@ -186,14 +217,26 @@ class PodcastMeetPage extends React.Component<any, MyState> {
                 height={"85%"}
                 gridGap={1}
               >
-                <UserVideoBox videoId={"user"} />
-                <UserVideoBox videoId={"user-videox"} />
-                <UserVideoBox videoId={"user-video4"} />
-                <UserVideoBox videoId={"user-video3"} />
-                <UserVideoBox videoId={"user-video3"} />
-                <UserVideoBox videoId={"user-video3"} />
-                <UserVideoBox videoId={"user-video3"} />
-                <UserVideoBox videoId={"user-video3"} />
+                {streams.map((item, index) => (
+                  <Box
+                    key={index}
+                    border={"1px solid gray"}
+                    borderRadius={16}
+                    display="grid"
+                    placeItems={"center"}
+                    bgColor="black"
+                    // backgroundImage="linear-gradient(to bottom right, #FF61D2, #FE9090)"
+                  >
+                    <video
+                      id={"video-" + index}
+                      src=""
+                      autoPlay
+                      ref={item.ref}
+                      style={{ transform: "scaleX(-1)" }}
+                    ></video>
+                    <audio id={index + "-audio"} autoPlay></audio>
+                  </Box>
+                ))}
                 <Box border={"1px solid pink"} className="video-box">
                   <video id="screen-share" autoPlay></video>
                 </Box>
@@ -214,10 +257,10 @@ class PodcastMeetPage extends React.Component<any, MyState> {
                 <Box display={"flex"} gap={2}>
                   <IconButton
                     aria-label="Mute Mic"
-                    colorScheme={this.state.micState ? "yellow" : undefined}
+                    colorScheme={micState ? "yellow" : undefined}
                     onClick={() => {
                       const config: MediaStreamConstraints = {
-                        audio: !this.state.micState,
+                        audio: !micState,
                         video: {
                           height: {
                             ideal: 960,
@@ -227,19 +270,17 @@ class PodcastMeetPage extends React.Component<any, MyState> {
                           },
                         },
                       };
-                      this.setState({ micState: !this.state.micState });
-                      this.state.micState
-                        ? this.closeAudioMic(config)
-                        : this.openAudioMic(config);
+                      setMicState(!micState);
+                      micState ? closeAudioMic(config) : openAudioMic(config);
                     }}
-                    icon={this.state.micState ? <MdMic /> : <MdMicOff />}
+                    icon={micState ? <MdMic /> : <MdMicOff />}
                   ></IconButton>
                   <IconButton
                     aria-label="Camera Off"
-                    colorScheme={this.state.videoState ? "yellow" : undefined}
+                    colorScheme={videoState ? "yellow" : undefined}
                     onClick={() => {
                       const config: MediaStreamConstraints = {
-                        audio: this.state.micState,
+                        audio: micState,
                         video: {
                           height: {
                             ideal: 960,
@@ -250,27 +291,19 @@ class PodcastMeetPage extends React.Component<any, MyState> {
                         },
                       };
 
-                      this.setState({ videoState: !this.state.videoState });
-                      this.state.videoState
-                        ? this.closeCamera(config)
-                        : this.openCamera(config);
+                      setVideoState(!videoState);
+                      videoState ? closeCamera(config) : openCamera(config);
                     }}
-                    icon={
-                      this.state.videoState ? <MdVideocam /> : <MdVideocamOff />
-                    }
+                    icon={videoState ? <MdVideocam /> : <MdVideocamOff />}
                   ></IconButton>
                   <IconButton
                     aria-label="Screen Share"
-                    colorScheme={this.state.screenShare ? "yellow" : undefined}
+                    colorScheme={screenShare ? "yellow" : undefined}
                     onClick={() => {
-                      this.handleScreenShare();
+                      handleScreenShare();
                     }}
                     icon={
-                      this.state.screenShare ? (
-                        <MdStopScreenShare />
-                      ) : (
-                        <MdScreenShare />
-                      )
+                      screenShare ? <MdStopScreenShare /> : <MdScreenShare />
                     }
                   ></IconButton>
                   <Link to="/end-call-page">
@@ -291,17 +324,17 @@ class PodcastMeetPage extends React.Component<any, MyState> {
                     variant={"solid"}
                     onClick={async () => {
                       let pc = newPeerConnection();
+                      createConnectionOffer(pc);
+
                       pc.onicecandidate = async (event) => {
                         if (event.candidate === null) {
-                          this.setState({
-                            localOffer: btoa(
-                              JSON.stringify(pc.localDescription)
-                            ),
-                          });
+                          setLocalOffer(
+                            btoa(JSON.stringify(pc.localDescription))
+                          );
 
-                          console.log(this.state.localOffer);
+                          console.log(localOffer);
 
-                          let x = await this.fetchRemoteAnswer(
+                          let x = await fetchRemoteAnswer(
                             btoa(JSON.stringify(pc.localDescription))
                           );
 
@@ -314,7 +347,7 @@ class PodcastMeetPage extends React.Component<any, MyState> {
                       };
                     }}
                   >
-                    Join
+                    {recording ? "StopRecording" : "Record"}
                   </Button>
                 </Box>
               </Box>
@@ -325,27 +358,34 @@ class PodcastMeetPage extends React.Component<any, MyState> {
         <Outlet />
       </Box>
     );
-  }
-}
+  });
 
 type videoProps = {
   videoId: string;
+  ref: any;
+  srcObject: MediaProvider | null;
 };
 
-const UserVideoBox: React.FunctionComponent<videoProps> = (props) => {
-  return (
-    <Box
-      border={"1px solid gray"}
-      borderRadius={16}
-      display="grid"
-      placeItems={"center"}
-      bgColor="black"
-      // backgroundImage="linear-gradient(to bottom right, #FF61D2, #FE9090)"
-    >
-      <video id={props.videoId + "-video"} src="" autoPlay></video>
-      <audio id={props.videoId + "-audio"} autoPlay></audio>
-    </Box>
-  );
-};
+// const UserVideoBox: React.FunctionComponent<videoProps> = (props) => {
+//   const videoRef = useRef(props.ref)
+//   return (
+//     <Box
+//   border={"1px solid gray"}
+//   borderRadius={16}
+//   display="grid"
+//   placeItems={"center"}
+//   bgColor="black"
+//   // backgroundImage="linear-gradient(to bottom right, #FF61D2, #FE9090)"
+// >
+//   <video
+//     id={props.videoId + "-video"}
+//     src=""
+//     autoPlay
+//     ref={videoRef}
+//   ></video>
+//   <audio id={props.videoId + "-audio"} autoPlay></audio>
+// </Box>
+//   );
+// };
 
 export default PodcastMeetPage;

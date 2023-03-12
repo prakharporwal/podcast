@@ -9,7 +9,6 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { MdSend } from "react-icons/md";
-import { connectToWS } from "../websocket/Websocket";
 
 type User = {
   email: string;
@@ -24,96 +23,99 @@ type chatMessage = {
 var currentUser: string = "prakhar";
 
 type chatBoxProps = {
-  roomId: string;
+  ws: WebSocket;
+  roomId: string | undefined;
 };
 
 export const ChatBox: React.FunctionComponent<chatBoxProps> = (props) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
-
+  const websocket = props.ws;
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [chats, setChats] = useState<chatMessage[]>([
-    {
-      message: "hey",
-      sender: { email: "prakhar", isActive: true },
-    },
-    {
-      message:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
-        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
-      sender: { email: "lolo" },
-    },
-    {
-      message: "abey",
-      sender: { email: "Anony" },
-    },
-    {
-      message: "hey",
-      sender: { email: "prakhar", isActive: true },
-    },
-    {
-      message:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
-        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
-      sender: { email: "lolo" },
-    },
-    {
-      message: "abey",
-      sender: { email: "Anony" },
-    },
-    {
-      message: "hey",
-      sender: { email: "prakhar", isActive: true },
-    },
-    {
-      message:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
-        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
-      sender: { email: "lolo" },
-    },
-    {
-      message: "abey",
-      sender: { email: "Anony" },
-    },
-    {
-      message: "hey",
-      sender: { email: "prakhar", isActive: true },
-    },
-    {
-      message:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
-        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
-      sender: { email: "lolo" },
-    },
-    {
-      message: "abey",
-      sender: { email: "Anony" },
-    },
-    {
-      message: "hey",
-      sender: { email: "prakhar", isActive: true },
-    },
-    {
-      message:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
-        "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
-      sender: { email: "lolo" },
-    },
-    {
-      message: "abey",
-      sender: { email: "Anony" },
-    },
+    // {
+    //   message: "hey",
+    //   sender: { email: "prakhar", isActive: true },
+    // },
+    // {
+    //   message:
+    //     "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+    //     "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+    //   sender: { email: "lolo" },
+    // },
+    // {
+    //   message: "abey",
+    //   sender: { email: "Anony" },
+    // },
+    // {
+    //   message: "hey",
+    //   sender: { email: "prakhar", isActive: true },
+    // },
+    // {
+    //   message:
+    //     "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+    //     "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+    //   sender: { email: "lolo" },
+    // },
+    // {
+    //   message: "abey",
+    //   sender: { email: "Anony" },
+    // },
+    // {
+    //   message: "hey",
+    //   sender: { email: "prakhar", isActive: true },
+    // },
+    // {
+    //   message:
+    //     "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+    //     "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+    //   sender: { email: "lolo" },
+    // },
+    // {
+    //   message: "abey",
+    //   sender: { email: "Anony" },
+    // },
+    // {
+    //   message: "hey",
+    //   sender: { email: "prakhar", isActive: true },
+    // },
+    // {
+    //   message:
+    //     "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+    //     "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+    //   sender: { email: "lolo" },
+    // },
+    // {
+    //   message: "abey",
+    //   sender: { email: "Anony" },
+    // },
+    // {
+    //   message: "hey",
+    //   sender: { email: "prakhar", isActive: true },
+    // },
+    // {
+    //   message:
+    //     "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veritatis ex ipsam accusantium! Eligendi velit recusandae assumenda qui error nostrum quisquam cumque labore dolore! Nesciunt, ducimus. Obcaecati animi error adipisci repellat" +
+    //     "chal na Naval se Smart toh mein hai! chat bey ~baap~ ko mt *sikha* khud hi toh gum hai be raste mat ddikha",
+    //   sender: { email: "lolo" },
+    // },
+    // {
+    //   message: "abey",
+    //   sender: { email: "Anony" },
+    // },
   ]);
-
-  let websocket: WebSocket = connectToWS(props.roomId);
 
   useEffect(() => {
     websocket.addEventListener("message", (e) => {
       try {
         let msgRecd = JSON.parse(e.data);
+
         if (msgRecd.Body !== null && msgRecd.Body !== undefined) {
           let msg = JSON.parse(msgRecd.Body);
-          setChats([...chats, msg]);
+
+          if (msg.sender) {
+            setChats([...chats, msg]);
+          }
         }
       } catch (err) {
         console.log("message recieved parsing went wrong");
@@ -168,7 +170,7 @@ export const ChatBox: React.FunctionComponent<chatBoxProps> = (props) => {
           paddingY={"2"}
           borderRadius={"8px 8px 0px 0px"}
         >
-          Joe Rogan Naval #1906
+          {props.roomId}
         </Heading>
 
         <Box

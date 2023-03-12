@@ -6,7 +6,6 @@ function newPeerConnection(): RTCPeerConnection {
       },
     ],
   });
-  createConnectionOffer(pc);
   return pc;
 }
 
@@ -44,4 +43,30 @@ function intiateASession(pc: RTCPeerConnection, remoteOfferAnswer: any) {
   }
 }
 
-export { intiateASession, newPeerConnection };
+// function createAnswer() {
+//   let pc = new RTCPeerConnection({
+//     iceServers: [
+//       {
+//         urls: "stun:stun.l.google.com:19302",
+//       },
+//     ],
+//   });
+
+//   pc.onconnectionstatechange = handleStateChange;
+//   pc.onnegotiationneeded = handleNegotiation;
+//   pc.ontrack = handleOnTrack;
+// }
+
+// const handleStateChange = () => {
+//   console.log("connection status changed!");
+// };
+
+// const handleNegotiation = () => {
+//   console.log("negotiation needed changed!");
+// };
+
+// const handleOnTrack = () => {
+//   console.log("on track handler!");
+// };
+
+export { createConnectionOffer, newPeerConnection };

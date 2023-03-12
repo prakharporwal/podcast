@@ -8,10 +8,12 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Dashboard from "./Components/Dashboard";
 import Playlist from "./Components/Playlist";
 import SongQueue from "./Components/SongQueue";
+import ConferencePage from "./Pages/ConferencePage";
 import { EditRecordingPage } from "./Pages/EditRecordingPage";
 import { JoinPodCastPage } from "./Pages/JoinPodcastPage";
 import LoginPage from "./Pages/LoginPage";
 import MainPage from "./Pages/MainPage";
+import { NotFoundPage } from "./Pages/NotFoundPage";
 import PodcastMeetPage from "./Pages/PodcastMeetPage";
 
 const outline = defineStyle({
@@ -60,12 +62,15 @@ function App() {
             </Route>
 
             <Route path="/podcast" element={<JoinPodCastPage />}></Route>
+            <Route path="/conf/:roomId" element={<ConferencePage />}></Route>
             <Route
               path="/podcast/:roomId"
               element={<PodcastMeetPage />}
             ></Route>
             <Route path="/podcast/edit" element={<EditRecordingPage />}></Route>
             <Route path="/login" element={<LoginPage />}></Route>
+            {/* 404 rounte */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </div>
